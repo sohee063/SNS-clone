@@ -2,7 +2,7 @@ import { readDB, writeDB } from "../dbController.js";
 import { v4 } from "uuid";
 
 const getMsgs = () => readDB("messages");
-const setMsgs = (data) => writeDB("messages", msgs);
+const setMsgs = (data) => writeDB("messages", data);
 const messagesRoute = [
   {
     // GET MESSAGES
@@ -32,17 +32,23 @@ const messagesRoute = [
     // CREATE MESSAGES
     method: "post",
     route: "/messages",
-    handler: ({ body, params, query }, res) => {
-      const msgs = getMsgs();
-      const newMsg = {
-        id: v4(),
-        text: body.text,
-        userId: body.userId,
-        timestamp: Date.now()
-      };
-      msgs.unshift(newMsg);
-      setMsgs();
-      res.send(newMsg);
+    handler: ({ body }, res) => {
+      try {
+        if (!body.userId) throw Error("no userId");
+        const msgs = getMsgs();
+        console.log(msgs);
+        const newMsg = {
+          id: v4(),
+          text: body.text,
+          userId: body.userId,
+          timestamp: Date.now()
+        };
+        msgs.unshift(newMsg);
+        setMsgs(msgs);
+        res.send(newMsg);
+      } catch (err) {
+        res.status(500).send({ error: err });
+      }
     }
   },
   {
@@ -69,13 +75,12 @@ const messagesRoute = [
     // DELETE MESSAGES
     method: "delete",
     route: "/messages/:id",
-    handler: ({ body, params: { id } }, res) => {
+    handler: ({ params: { id }, query: { userId } }, res) => {
       try {
         const msgs = getMsgs();
-        const targetIndex = msgs.findIndex((msg) => msg.id === id);
+        const targetIndex = msgs.findIndex((msg) => msg.id === parseInt(id));
         if (targetIndex < 0) throw "메시지가 없습니다.";
-        if (msgs[targetIndex].userId !== body.userId)
-          throw "사용자가 다릅니다.";
+        if (msgs[targetIndex].userId !== userId) throw "사용자가 다릅니다.";
         msgs.splice(targetIndex, 1);
         setMsgs(msgs);
         res.send(id);
