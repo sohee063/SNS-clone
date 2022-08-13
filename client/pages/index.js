@@ -9,7 +9,8 @@ const Home = ({ smsgs, users }) => {
       <MsgList smsgs={smsgs} users={users} />
     </>
   );
-};
+}
+
 
 export const getServerSideProps = async () => {
   const smsgs = await fetcher("get", "/messages");
